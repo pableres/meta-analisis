@@ -1,0 +1,83 @@
+#Lectura de paquetes
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+packages <- c("metafor", "esc", "readxl")
+ipak(packages)
+
+#InformaciÃ³n clave: http://www.metafor-project.org/doku.php
+
+#Carga de nuestro directorio de trabajo
+setwd('C:/Users/al/Desktop/Chupitos')
+
+#Carga de la base de datos si tenemos cada VD en una
+#hoja distinta de excel
+baseMA <- read_excel('BaseMARiesgoReinci.xlsx',
+                     #hay que cambiar en sheet cada hoja 
+                     #de la VD.
+                     sheet = 'Reincidencia', col_names = TRUE)
+
+#MA simple usando la d y el error estÃ¡ndar manualmente
+resultMA<-rma(yi=baseMA$D, vi=baseMA$V, 
+              method="DL",
+              weighted=TRUE, 
+              level=95, 
+              digits=4)
+
+
+#Funnel plot
+funnel(resultMA)
+
+#Funnel plot mejorado 
+funnel(resultMA, level=c(90, 95, 99), 
+       shade=c("white", "gray55", "gray75"), 
+       refline=0, legend=TRUE)
+
+#Funnel con trim and fill
+taf <- trimfill(resultMA)
+funnel(taf, legend=TRUE)
+
+
+#GrÃ¡fica de valores de influencia
+influenciado<-influence.rma.uni(resultMA)
+plot(influenciado)
+
+
+#--------------------------------------------------
+#FOREST PLOT
+
+#1. Forest bÃ¡sico
+forest(resultMA)
+
+#2. Forest con autores y eje x
+forest(resultMA,  
+       slab = paste(baseMA$Autores2,
+                    baseMA$AÃ±o, sep = ", "),
+       xlab="Efecto en reincidencia", 
+       order=order(baseMA$Autores2))
+
+#3. Forest con pesos y lÃ­mites del eje x
+forest(resultMA,  
+       slab = paste(baseMA$Autores2,
+                    baseMA$AÃ±o, sep = ", "),
+       xlab="Efecto en reincidencia", 
+       order=order(baseMA$Autores2), 
+       xlim = c(-2.5, 2.8),
+       alim= c(-1.5, 1.5),
+       showweights=TRUE)
+
+#4. AÃ±adir cabeceras.
+
+text(-2.25, 22, "Autor y aÃ±o", cex=.8, font=2)
+text(2.2, 22, "Pesos", cex=.8, font=2)
+text(2.5, 22, "D [IC-95%]", cex=.8, font=2)
+
+#mÃ¡rgenes mÃ¡s pequeÃ±os
+par(mar=c(4,4,1,2))
+
+#grÃ¡ficos con decimales con punto
+options(OutDec=',')
