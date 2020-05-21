@@ -1,0 +1,52 @@
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+packages <- c("metafor", "esc", "readxl")
+ipak(packages)
+
+#Informacion clave: http://www.metafor-project.org/doku.php
+
+#Carga de nuestro directorio de trabajo
+setwd('C:/Users/al/Desktop/Chupitos')
+
+#Carga de la base de datos 
+baseMA <- read_excel('BaseMARiesgoReinci.xlsx',
+                     sheet = 'Reincidencia', col_names = TRUE)
+
+#Calculo d y variabilidad para comparaciÃ³n de medias estandarizadas
+mid<-escalc(measure='SMD', m1i= baseMA$MControlPost, 
+       m2i= baseMA$MExperimentalPost, 
+       sd1i=baseMA$DTControlPost,
+       sd2i=baseMA$DTExperimentalPost,
+       n1i=baseMA$NControl,
+       n2i=baseMA$NExperimental)
+
+#agregar a la base esas variables
+baseMA$nuevaD<-mid$yi
+baseMA$nuevaVarD<-mid$vi
+
+#uso de esas variables para un MA
+resultMA<-rma(yi=baseMA$nuevaD, vi=baseMA$nuevaVarD, 
+              method="DL",
+              weighted=TRUE, 
+              level=95, 
+              digits=4)
+summary(resultMA)
+
+#Opcion 2 uso directo
+
+resultMA2<-rma(measure='SMD', m1i= baseMA$MControlPost, 
+               m2i= baseMA$MExperimentalPost, 
+               sd1i=baseMA$DTControlPost,
+               sd2i=baseMA$DTExperimentalPost,
+               n1i=baseMA$NControl,
+               n2i=baseMA$NExperimental, 
+              method="DL",
+              weighted=TRUE, 
+              level=95, 
+              digits=4)
+summary(resultMA2)
